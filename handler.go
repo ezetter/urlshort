@@ -15,10 +15,9 @@ import (
 // http.Handler will be called instead.
 func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// path := r.URL.Path
 		matched := pathsToUrls[r.URL.Path]
-		fmt.Printf("From Map: Path = %v, matched=%v\n", r.URL.Path, matched)
 		if matched != "" {
+			fmt.Printf("From Map: Path = %v, matched=%v\n", r.URL.Path, matched)
 			http.Redirect(w, r, matched, http.StatusSeeOther)
 		} else {
 			fallback.ServeHTTP(w, r) // call original
@@ -50,18 +49,19 @@ type PathMapping struct {
 func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	var mappingStructs []PathMapping
 	err := yaml.Unmarshal(yml, &mappingStructs)
+	if err != nil {
+		return nil, err
+	}
+
 	pathsToUrls := make(map[string]string)
 	for _, m := range mappingStructs {
 		pathsToUrls[m.Path] = m.URL
 	}
 
-	if err != nil {
-		return nil, err
-	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		matched := pathsToUrls[r.URL.Path]
-		fmt.Printf("From YAML: Path = %v, matched=%v\n", r.URL.Path, matched)
 		if matched != "" {
+			fmt.Printf("From YAML: Path = %v, matched=%v\n", r.URL.Path, matched)
 			http.Redirect(w, r, matched, http.StatusSeeOther)
 		} else {
 			fallback.ServeHTTP(w, r) // call original
