@@ -23,19 +23,15 @@ func loadYaml(fileName string) []byte {
 	return dat
 }
 
-var pathsToUrls = map[string]string{
-	"/urlshort-godocy": "https://godoc.org/github.com/gophercises/urlshort",
-	"/yaml-godocz":     "https://godoc.org/gopkg.in/yaml.v2",
-}
-
 func main() {
 	mux := defaultMux()
-
-	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
+	urlshort.AddURL("/urlshort-godocy", "https://godoc.org/github.com/gophercises/urlshort")
+	urlshort.AddURL("/yaml-godocz", "https://godoc.org/gopkg.in/yaml.v2")
+	// mapHandler := urlshort.MapHandler(pathsToUrls, mux)
 
 	// Build the YAMLHandler using the mapHandler as the
 	// fallback
-	yamlHandler, err := urlshort.YAMLHandler(loadYaml("mappings.yaml"), mapHandler)
+	yamlHandler, err := urlshort.YAMLHandler(loadYaml("mappings.yaml"), mux)
 	check(err)
 	fmt.Println("Starting the server on :8080")
 	http.ListenAndServe(":8080", yamlHandler)
@@ -52,7 +48,7 @@ func addURL(w http.ResponseWriter, r *http.Request) {
 	pairs := r.URL.Query()
 	for k, v := range pairs {
 		if strings.HasPrefix(k, "/") && k != "/addUrl" {
-			pathsToUrls[k] = v[0]
+			urlshort.AddURL(k, v[0])
 			fmt.Fprintf(w, "Added url %s -> %s\n", k, v[0])
 		} else {
 			fmt.Fprintf(w, "Query string is malformed.")

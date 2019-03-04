@@ -7,6 +7,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+var pathMap = make(map[string]string)
+
+type PathMapping struct {
+	Path string
+	URL  string
+}
+
+func AddURL(path string, url string) {
+	pathMap[path] = url
+}
+
 // MapHandler will return an http.HandlerFunc (which also
 // implements http.Handler) that will attempt to map any
 // paths (keys in the map) to their corresponding URL (values
@@ -23,11 +34,6 @@ func MapHandler(pathsToUrls map[string]string, fallback http.Handler) http.Handl
 			fallback.ServeHTTP(w, r) // call original
 		}
 	})
-}
-
-type PathMapping struct {
-	Path string
-	URL  string
 }
 
 // YAMLHandler will parse the provided YAML and then return
@@ -53,19 +59,19 @@ func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 		return nil, err
 	}
 
-	pathsToUrls := make(map[string]string)
 	for _, m := range mappingStructs {
-		pathsToUrls[m.Path] = m.URL
+		pathMap[m.Path] = m.URL
 	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		matched := pathsToUrls[r.URL.Path]
-		if matched != "" {
-			fmt.Printf("From YAML: Path = %v, matched=%v\n", r.URL.Path, matched)
-			http.Redirect(w, r, matched, http.StatusSeeOther)
-		} else {
-			fallback.ServeHTTP(w, r) // call original
-		}
-	}), nil
+	return MapHandler(pathMap, fallback), nil
+	// return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	matched := pathsToUrls[r.URL.Path]
+	// 	if matched != "" {
+	// 		fmt.Printf("From YAML: Path = %v, matched=%v\n", r.URL.Path, matched)
+	// 		http.Redirect(w, r, matched, http.StatusSeeOther)
+	// 	} else {
+	// 		fallback.ServeHTTP(w, r) // call original
+	// 	}
+	// }), nil
 
 }
